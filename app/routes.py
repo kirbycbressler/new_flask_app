@@ -1,10 +1,11 @@
 from flask import Flask, request
-from app.database import(
-  scan, insert, 
-  deactivate_user, select
-)
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///mydb.db"
+db = SQLAlchemy(app)
+
+from app.database import User
 
 
 @app.route("/users")
@@ -13,8 +14,9 @@ def get_all_users():
   "ok": True,
   "message": "Success"
   }
-  out["body"] = scan()
+  out["users"] = User.query.all()
   return out
+
 
 @app.route("/users", methods=["POST"])
 def create_user():
@@ -22,13 +24,20 @@ def create_user():
     "ok": True,
     "message": "Success"
   }
+
   user_data = request.json
-  out["new_id"] = insert(
-    user_data.get("first_name"),
-    user_data.get("last_name"),
-    user_data.get("hobbies")
+  db.session.add(
+    User(
+      first_name= user_data.get("first_name"),
+      last_name = user_data.get("last_name"),
+      hobbies= user_data.get("hobbies")
+    )
   )
+  db.session.commit()
+
+
   return out, 201
+
 
 @app.route("/users/<int:uid>", methods=["DELETE"])
 def delete_user(uid):
@@ -36,8 +45,8 @@ def delete_user(uid):
     "ok": True,
     "message": "Success"
   }
-  deactivate_user(uid)
   return out, 200
+
 
 @app.route("/users/<int:uid>", methods=["GET"])
 def get_single_user(uid):
@@ -45,8 +54,8 @@ def get_single_user(uid):
     "ok": True,
     "message": "Success"
   }
-  out["body"] = select(uid)
   return out
+
 
 @app.route("/agent")
 def agent():
