@@ -54,6 +54,7 @@ def get_single_user(uid):
     "ok": True,
     "message": "Success"
   }
+  out["user"] = User.query.filter_by(id=uid).first()
   return out
 
 
